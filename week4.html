@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com"> 
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+</head>
+
+<body bgcolor=#000000>
+  
+  <div>
+    <pre>
+/week four: microcontroller programming
+    </pre>
+  </div>
+  
+
+  
+  <div>
+    <pre style="color:gray">
+# preface
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+  last week, i created a mechanism that uses gears/motor to wind a string and raise a weight — a proxy for my final assignment: a knock-activated door opener.
+
+</p>
+<img src="images/ks14.gif">
+<p>
+  this mechanism was controlled by a potentiometer (which, given the low
+  voltage, essentially acted as an on/off switch). for this week's assignment,
+  i decided to implement a mechanism that would allow for the motor to raise
+  and lower the weight after a knock. 
+</p>
+  </div>
+  <div>
+    <pre style="color:gray">
+# creating the circuit
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+before incorporating the vibration sensor in any way, i decided first to make sure i could
+create the circuit using the button as a trigger. 
+</p>
+<p>
+i essentially combined the arduino programs from the <a href="https://nathanmelenbrink.github.io/ps70/04_arduino/arduino.html"> microcontroller workshop</a> and <a href="https://nathanmelenbrink.github.io/ps70/04_arduino/L9110.html">motor driver workshops</a>
+to create a circuit that, when the button was pressed, would make the motor spin for four seconds and then stop:
+</p>
+<img src="images/mp1.png">
+<p>
+the circuit, too, was essentially a combined version of the previous two workshops:
+</p>
+<img src="images/mp2.jpg">
+  </div>
+
+  <div>
+    <pre style="color:gray">
+# incorporating the piezo
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+a piezo sensor, as i learned from the arduino handbook, is a device that detects vibrations and produces a small charge based
+on the strength of the vibration:
+    </p>
+    <img src="images/mp3.jpg">
+
+<p>
+to incorporate this into the circuit, i removed the button and replaced it with the piezo sensor. the only additional change
+i had to make to the circuit was to switch the input from digital pin 1 to analog pin 0.
+
+additionally, i secured each of the components onto a wood block using m3 screws and nuts:
+</p>
+<img src="images/mp4.jpg">
+<p>
+for the program, then, i had to make some small adjustments:
+<p>
+- i updated the sensor input pin from 2 to A0
+</p>
+<p>
+- i changed the sensor reading from digitalRead to analogRead
+</p>
+<p>
+  - i changed the conditional statement from buttonState == HIGH to an sensorReading >= 25
+  to account for the fact that the output is a numerical value.
+</p>
+<p>
+  - i complicated the command, by making the motor turn in one direction for three seconds, pause for three seconds, and turn in the other 
+  direction for three seconds before stopping.
+</p>
+<p>
+  - i included a print statement to display the value of the sensor when it is activated.
+</p>
+<img src="images/mp5.png">
+<p>
+and here is the final product — me knocking on the wood with a screwdriver:
+</p>
+<img src="images/mp6.gif">
+  </div>
+</body>
+
+<link rel="stylesheet" href="style.css">
+
+</html>
