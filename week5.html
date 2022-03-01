@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com"> 
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+</head>
+
+<body bgcolor=#000000>
+  
+  <div>
+    <pre>
+/week five: 3d printing
+    </pre>  
+  </div>
+  
+
+  
+  <div>
+    <pre style="color:gray">
+# preface
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+continuing the theme of locks/opening doors, i decided to make a 3d model/3d print of 
+the key to my dorm room for this week's assignment. 
+</p>
+<img src="images/3d1.jpg">
+<p>
+i thought this would be a good candidate for this
+week's assignment because it contains three-dimensional
+inner grooves that are both intricate and that curve in on each other — making 
+it difficult to reproduce by laser cutting or milling. 
+</p>
+  </div>
+  <div>
+    <pre style="color:gray">
+# creating the 3d model
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+because of the importance of accurate measurements of the key's dimensions,
+i decided to upload an image of the key as a canvas on fusion 360, and then
+create my sketch based on that canvas.
+</p>
+<img src="images/3d2.png">
+<p>
+i also took a picture of the key's side view to use as a perpendicular canvas.
+</p>
+<img src="images/3d3.jpg">
+<p>
+using this lateral view, i first created a sketch of the side profile of the key
+</p>
+<img src="images/3d4.png">
+<p>
+  i then extruded this to form the shaft of the key
+</p>
+<img src="images/3d5.png">
+<p>
+  then, using the other canvas of the top view of the key, i created another sketch outlining the key's teeth.
+</p>
+<img src="images/3d6.png">
+<p>
+  then, using the "intersect" setting of the "extrude" function, i extruded this sketch 
+  to form a body that consisted of the intersection between these two sketches.
+</p>
+<img src="images/3d7.png">
+<p>
+  lastly, there were two additional notches on the other side of the key 
+  that weren't accounted for in this draft:
+</p>
+<img src="images/3d8.jpg">
+<p>
+  as such, i had to flip the model over, and create a sketch of the indentation. then, using the "cut" setting of the "extrude"
+  function, i was able to remove these two notches from the model.
+</p>
+<img src="images/3d9.png">
+</div>
+
+  <div>
+    <pre style="color:gray">
+# printing the key
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+having completed a preliminary model, i then exported it as a .stl file, prepared
+the 3d print in prusaslicer using the DRAFT settings, and printed.
+
+    </p>
+    <img src="images/3d10.jpg">
+
+<p>
+unfortunately, this version was much thinner than my actual key. i'm not sure why this happened; i assume
+it was because i measured incorrectly or calibrated the canvas incorrectly. so, i re-measured the dimensions
+and did another, more accurate 3d model, which i then printed using black filament</p>
+<p>here, you can see a comparison of the thicknesses of my first version (blue), my second version (black), and my actual key:</p>
+<img src="images/3d11.jpg">
+<p>
+and here's a comparison of it and my original key
+</p>
+<img src="images/3d12.jpg">
+<p>
+  unfortunately, it did not successfuly unlock the door. i think this is a combination of 
+  the measurement inaccuracies in my original 3d model as well as the inexactness of the 3d printing.
+  perhaps for a future iteration, i will refind the 3d model and print on a more detailed nozzle setting.
+</p>
+<p>Here is my final <a download href="/3d model/key.3mf">.3mf file</a>, and here is my final <a download href="3d model/key.gcode">.gcode file</a>.</p>
+  </div>
+</body>
+
+<link rel="stylesheet" href="style.css">
+
+</html>
