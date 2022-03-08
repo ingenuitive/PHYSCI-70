@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com"> 
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+
+</head>
+
+<body bgcolor=#000000>
+  
+  <div>
+    <pre>
+/week six: sensors
+    </pre>  
+  </div>
+  
+
+  
+  <div>
+    <pre style="color:gray">
+# capacitive sensor
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+i decided to use a capacitive sensor to measure the amount of water in a cup.
+</p>
+<p>
+  here is a link to <a href="https://roberthart56.github.io/SCFAB/SC_lab/Sensors/tx_rx_sensors/rx_tx02.txt">the code</a> that i used — though i did make
+  a small correction in line 26, changing it to pinMode(tx_pin,OUTPUT);
+  </p>
+  <p>
+    i then rigged up the circuit as such:
+  </p>
+<img src="images/s1.jpg">
+<p>
+i connected the alligator clips to the copper plates, which i taped to the sides of a cup. the two masking tape lines
+correspond to 50mL and 150mL of water, which i measured out prior to attaching the plates.
+</p>
+<img src="images/s2.jpg">
+<p>
+i began pouring in water and seeing the corresponding change in capacitance on the serial plotter, which
+i was able to calibrate due to the pre-measured quantities on the cup.
+</p>
+<img src="images/s3.png">
+  </div>
+  <div>
+    <pre style="color:gray">
+# piezo sensor
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+having already implemented a piezo sensor for my <a href="week4.html">week 4 assignment</a>, i decided to add upon
+that setup by implementing a pattern-based knock recognition mechanism.
+</p>
+<p>
+  if you'll recall, the previous mechanism would activate after a single knock above a certain threshold. 
+</p>
+<img src="images/mp6.gif">
+<p>
+for this week's assignment, my goal was to allow it to activate only after four knocks — one hard, two soft, and one hard.</p>
+<p>
+  this mainly required adjustments in the arduino code. this was my initial version:
+</p>
+<pre style="color:rgb(100, 209, 209)">
+  const int sensor = A0;     
+  const int A1A = 3;
+  const int A1B = 4;
+
+  int sensorReading = 0;
+
+  void setup() {
+    pinMode(A1A, OUTPUT);
+    pinMode(A1B, OUTPUT);
+    digitalWrite(A1A, LOW);
+    digitalWrite(A1B, LOW);
+    Serial.begin(9600);
+  }
+
+  void loop() {
+    sensorReading = analogRead(sensor);
+    
+    if (sensorReading >= 25) {
+      digitalWrite(A1A, HIGH);
+      Serial.println(sensorReading);
+      delay(3000);
+      digitalWrite(A1A, LOW);
+      delay(3000);
+      digitalWrite(A1B, HIGH);
+      delay(3000);
+      digitalWrite(A1B, LOW);
+    }
+  }
+</pre>
+<p>
+i soon discovered that if i wanted to implement a pattern-based system, i would have to create a variable that 
+would track the number of knocks and create different if statements that corresponded to the number of knocks that have already
+been made. additionally, i would no longer be able to rely on the delay() function, and would have to use the 
+millis() function to track time.
+</p>
+<p>
+  after several rounds of iterations around these constraints, here was my new version:
+</p>
+<pre style="color:rgb(100, 209, 209)">
+  const int sensor = A0;     
+  const int A1A = 3;
+  const int A1B = 4;
+  
+  int sensorReading = 0;
+  int knocks = 0;         
+  unsigned long previousTime = 0;
+  
+  long interval = 1000;
+  
+  void setup() {
+    pinMode(A1A, OUTPUT);
+    pinMode(A1B, OUTPUT);
+    digitalWrite(A1A, LOW);
+    digitalWrite(A1B, LOW);
+      Serial.begin(9600);
+  
+  }
+  
+  void loop() {
+    sensorReading = analogRead(sensor);
+    unsigned long currentTime = millis();
+  
+    if (currentTime % 100){
+      Serial.println(knocks);
+    }
+    
+    if (sensorReading >= 100 and knocks == 0){
+      knocks ++;
+      previousTime = currentTime;
+    } 
+  
+    if (knocks == 1 and currentTime - previousTime > interval and sensorReading >= 25){
+      knocks ++;
+      previousTime = currentTime;
+    }
+  
+    if (knocks == 2 and currentTime - previousTime > interval and sensorReading >= 25){
+      knocks ++;
+      previousTime = currentTime;
+    }
+  
+    if (knocks == 3 and currentTime - previousTime > interval and sensorReading >= 25){
+     digitalWrite(A1A, HIGH);
+      knocks ++;
+      previousTime = currentTime;
+    }
+  
+    if (knocks == 4 and currentTime - previousTime > 1000){
+     digitalWrite(A1A, LOW);
+      knocks = 0;
+    }
+  }
+</pre>
+<p>
+  i then made some slight adjustments to condense the code/remove redundancies, and this was my final version:
+</p>
+<pre style="color:rgb(100, 209, 209)">
+  const int sensor = A0;     
+const int A1A = 3;
+const int A1B = 4;
+
+int sensorReading = 0;
+int k = 0;         
+unsigned long previousTime = 0;
+
+long interval = 500;
+
+void setup() {
+  pinMode(A1A, OUTPUT);
+  pinMode(A1B, OUTPUT);
+  digitalWrite(A1A, LOW);
+  digitalWrite(A1B, LOW);
+    Serial.begin(9600);
+
+}
+
+void loop() {
+  sensorReading = analogRead(sensor);
+  unsigned long currentTime = millis();
+  Serial.println(k);
+
+  if ((sensorReading >= 100 and k == 0) or ((k == 1 or k == 2) and currentTime - previousTime > interval and sensorReading >= 25)){
+    k ++;
+    previousTime = currentTime;
+  }
+
+  if (k == 3 and currentTime - previousTime > interval and sensorReading >= 100){
+   digitalWrite(A1A, HIGH);
+    k ++;
+    previousTime = currentTime;
+  }
+
+  if (k == 4 and currentTime - previousTime > 1000){
+   digitalWrite(A1A, LOW);
+    k = 0;
+  }
+}
+</pre>
+<p>
+  and after uploading it to the arduino board, here it is in action:
+</p>
+<img src="images/s4.gif">
+  </div>
+</body>
+
+<link rel="stylesheet" href="style.css">
+
+</html>
