@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com"> 
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+
+</head>
+
+<body bgcolor=#000000>
+  
+  <div>
+    <pre>
+/week seven: output devices
+    </pre>  
+  </div>
+  
+
+  
+  <div>
+    <pre style="color:gray">
+# input device
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+for my input device, i wanted to try using the thermistor for the first time. 
+</p>
+<p>
+  using <a href="https://www.circuitbasics.com/arduino-thermistor-temperature-sensor-tutorial/">this tutorial</a>, i built the circuit for the 
+  thermistor and was able to calibrate it to display the temperature in my serial monitor using the following code: 
+  </p>
+  <pre style="color:rgb(100, 209, 209)">
+    int ThermistorPin = 0;
+    int Vo;
+    float R1 = 10000;
+    float logR2, R2, T;
+    float c1 = 1.009249522e-03, c2 = 2.378405444e-04, c3 = 2.019202697e-07;
+    
+    void setup() {
+    Serial.begin(9600);
+    }
+    
+    void loop() {
+      
+      Vo = analogRead(ThermistorPin);
+      R2 = R1 * (1023.0 / (float)Vo - 1.0);
+      logR2 = log(R2);
+      T = (1.0 / (c1 + c2*logR2 + c3*logR2*logR2*logR2));
+      T = T - 273.15;
+      T = (T * 9.0)/ 5.0 + 32.0; 
+    
+      Serial.print("Temperature: "); 
+      Serial.print(T);
+      Serial.println(" F"); 
+    }
+  </pre>
+  <p>
+    and here is the circuit:
+  </p>
+<img src="images/output2.jpg">
+  </div>
+  <div>
+    <pre style="color:gray">
+# output device
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+for my output device, i wanted to try using the RGB LED. i followed <a href="week4.html">this tutorial</a>, and used their model of creating
+a separate function to set the values for R, G, and B. 
+</p>
+<p>
+  here is the code: 
+</p>
+<pre style="color:rgb(100, 209, 209)">
+  int red_light_pin= 9;
+  int green_light_pin = 10;
+  int blue_light_pin = 11;
+  
+  void setup() {
+    pinMode(red_light_pin, OUTPUT);
+    pinMode(green_light_pin, OUTPUT);
+    pinMode(blue_light_pin, OUTPUT);
+  }
+  
+  void loop() {
+    RGB_color(10, 20, 30);
+  }
+
+  void RGB_color(int red_light_value, int green_light_value, int blue_light_value){
+    analogWrite(red_light_pin, red_light_value);
+    analogWrite(green_light_pin, green_light_value);
+    analogWrite(blue_light_pin, blue_light_value);
+  }
+</pre>
+<p>
+and then, i built the circuit:
+</p>
+<img src="images/output1.jpg">
+  </div>
+  <div>
+    <pre style="color:gray">
+# bringing them together
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+essentially, for the final product, i wanted to make the LED change color in accordance with the temperature. the simplest way of doing this was
+to make one of the LED color values equal to the temperature.
+    </p>
+    <p>
+      this resulted in this code (essentially, combining the two previous programs and adding a temperature-dependent LED setting function):
+    </p>
+    <pre style="color:rgb(100, 209, 209)">
+      int ThermistorPin = 0;
+      int Vo;
+      float R1 = 10000;
+      float logR2, R2, T;
+      float c1 = 1.009249522e-03, c2 = 2.378405444e-04, c3 = 2.019202697e-07;
+      
+      int red_light_pin= 9;
+      int green_light_pin = 10;
+      int blue_light_pin = 11;
+      
+      void setup() {
+      Serial.begin(9600);
+        pinMode(red_light_pin, OUTPUT);
+        pinMode(green_light_pin, OUTPUT);
+        pinMode(blue_light_pin, OUTPUT);
+      }
+      
+      void loop() {
+      
+        RGB_color(T, 5, 5);
+      
+        Vo = analogRead(ThermistorPin);
+        R2 = R1 * (1023.0 / (float)Vo - 1.0);
+        logR2 = log(R2);
+        T = (1.0 / (c1 + c2*logR2 + c3*logR2*logR2*logR2));
+        T = T - 273.15;
+        T = (T * 9.0)/ 5.0 + 32.0; 
+      
+        Serial.print("Temperature: "); 
+        Serial.print(T);
+        Serial.println(" F"); 
+      
+      }
+      void RGB_color(int red_light_value, int green_light_value, int blue_light_value)
+       {
+        analogWrite(red_light_pin, red_light_value);
+        analogWrite(green_light_pin, green_light_value);
+        analogWrite(blue_light_pin, blue_light_value);
+      }
+    </pre>
+    <p>
+      unfortunately, this did not lead to significant visible changes in the color because the temperature fluctuation 
+      i could achieve was not particularly high. to solve this, i made one change — to set the RED value to (T-70)^2, which 
+      made it so that small variations in temperature would lead to larger changes in color
+    </p>
+    <p>
+      here is the final product in action (using my fingers as a heat source to increase the temperature detected by the thermistor)
+    </p>
+    <img src="images/output3.gif">
+</body>
+
+<link rel="stylesheet" href="style.css">
+
+</html>

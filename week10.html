@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com"> 
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+
+</head>
+
+<body bgcolor=#000000>
+  
+  <div>
+    <pre>
+/week nine: machines
+    </pre>  
+  </div>
+  
+
+  
+  <div>
+    <pre style="color:gray">
+# concept
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+coming up with an idea 
+was probably one of the most time consuming parts of this week's assignment. i toyed around with
+doing some sort of <a href="https://www.youtube.com/watch?v=aqAUmgE3WyM">useless box</a>, but i ultimately
+settled on making some sort of car!
+</p>
+<p>
+i think my dream version of a stepper motor-powered car would contain
+some sort of wireless remote-control mechanism, as well as (again, ideal version)
+some sort of wireless camera (sort of like <a href="https://www.amazon.com/DEERC-Remote-Control-Off-Road-Monster/dp/B07VCCL9VC">this</a>).
+</p>
+  <p>
+for now, however, i focused first on getting the car to move.
+  </p>
+  </div>
+  <div>
+    <pre style="color:gray">
+# build
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+i grabbed a block of wood and drilled two holes through either side of the wood — slightly larger than the two dowels that 
+i was using as tire axles. i then put the axles through the holes and attached the wheels to either end using the small screw 
+that came with the wheels.
+</p>
+<img src="images/machine1.JPG">
+<p>
+i then had to make some sort of bracket that could secure the stepper motor to the top of the car rigidly enough for it to maintain
+tension between it and the axles. i decided to use the shopbot to mill a small bracket piece</p>
+<img src="images/machine2.png">
+  <p>
+i then screwed the bracket onto the car, put the motor inside, and used a wood shim to make it fit snugly</p>
+<p><img src="images/machine4.png"></p>
+i then used rubber bands to secure the breadboard and excess wires.
+<p><img src="images/machine3.png"></p>
+<p>the next (and most difficult) step was connecting the motor to the tire axis. my original plan was to use rubber bands, like in this example that i found:</p>
+<img src="images/machine5.png"> 
+<p>
+  this did not work particularly well, likely because the circumference of the axles (i.e. the amount of surface area the rubber band has to grip onto the axle and 
+  exert torque) was smaller in my car than in this video example
+</p>
+<p>
+  i instead decided to use the timing bands. because the only closed loop timing band i could find was fairly small, i had to move the motor to the
+  back side of the car, and was only able to connect it to one of the two axles. 
+</p>
+<img src="images/machine6.png">
+  </div>
+<div>
+  <pre style="color:gray">
+# code
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+using the <a href="https://www.airspayce.com/mikem/arduino/AccelStepper/index.html">AccelStepper library</a>, i adapted the <a href="https://www.airspayce.com/mikem/arduino/AccelStepper/Bounce_8pde-example.html">bounce example</a>
+to 1) accelerate faster and reach a faster max speed and 2) increase the distance before changing direction to be the exact width of the tables in the room.
+</p>
+<p>
+  this was the code that I used:
+</p>
+<pre style="color:rgb(100, 209, 209)">
+  #include <AccelStepper.h>
+
+  const int stepPin = 13;
+  const int dirPin = 12;
+  
+  AccelStepper stepper (1, stepPin, dirPin);
+  void setup()
+  {  
+    stepper.setMaxSpeed(1000);
+    stepper.setAcceleration(200);
+    stepper.moveTo(700);
+  }
+  void loop()
+  {
+      if (stepper.distanceToGo() == 0)
+        stepper.moveTo(-stepper.currentPosition());
+      stepper.run();
+  }
+</pre>
+
+
+</div>
+<div>
+  <pre style="color:gray">
+# final result
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+vertical view:
+</p>
+<img src="images/machine7.gif">
+<p>
+  lateral view:
+  </p>
+  <img src="images/machine8.gif">
+
+</div>
+</body>
+
+<link rel="stylesheet" href="style.css">
+
+</html>
