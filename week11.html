@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com"> 
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+
+</head>
+
+<body bgcolor=#000000>
+  
+  <div>
+    <pre>
+/week eleven: programming
+    </pre>  
+  </div>
+  <div>
+    <pre style="color:gray">
+# concept
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+following last week's assignment, i've decided to change my final project to be a remote-controlled car.
+</p>
+<p>
+for this week, i wanted to try and use ESP-NOW to implement a method of remotely-controlling the motion of a motor using another microcontroller. 
+</p>
+  </div>
+  <div>
+    <pre style="color:gray">
+# circuit
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+for the circuit, i essentially just replicated the stepper motor circuit on one side of the breadboard, and the ESP-NOW setup from
+this <a href="https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/">tutorial</a> on the other side of the breadboard</p>
+<p>i also added a button and hooked it up to the analog sensor</p>
+<p><img src="images/net1.JPG"></p><p><img src="images/net2.JPG"></p>
+<p>
+  </div>
+<div>
+  <pre style="color:gray">
+# code
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+i began with the example code on the <a href="https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/">RandomNerd tutorial</a>.
+instead of creating a custom data structure, i had the microcontroller just send an integer called "forward" —
+whose value was determined by analogRead(A3): in other words, whether the button was pressed.
+</p>
+<p>
+  here was the code i used for the sending microcontroller:
+</p>
+<pre style="color:rgb(100, 209, 209)">
+    #include <esp_now.h>
+    #include <WiFi.h>
+    
+    uint8_t broadcastAddress[] = {0x94, 0x3C, 0xC6, 0x13, 0x97, 0x14};
+    
+    esp_now_peer_info_t peerInfo;
+    
+    void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+      Serial.print("\r\nLast Packet Send Status:\t");
+      Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+    }
+     
+    void setup() {
+      Serial.begin(115200);
+     
+      WiFi.mode(WIFI_STA);
+    
+      if (esp_now_init() != ESP_OK) {
+        Serial.println("Error initializing ESP-NOW");
+        return;
+      }
+    
+      esp_now_register_send_cb(OnDataSent);
+      
+      memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+      peerInfo.channel = 0;  
+      peerInfo.encrypt = false;
+      
+      if (esp_now_add_peer(&peerInfo) != ESP_OK){
+        Serial.println("Failed to add peer");
+        return;
+      }
+    }
+     
+    void loop() {
+    
+      int forward = analogRead(A3);
+    
+      Serial.println(forward);
+    
+      esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &forward, sizeof(forward));
+       
+      if (result == ESP_OK) {
+        Serial.println("Sent with success");
+      }
+      else {
+        Serial.println("Error sending the data");
+      }
+    
+      delay(500);
+    
+    }
+</pre>
+
+<p>
+  for the receiving microcontroller, i also began with the RandomNerd tutorial. 
+  i greatly simplified the code so that in the void loop(), it would execute stepper.runSpeed() (i.e. make the 
+  stepper motor move) only if the value of the "forward" variable was greater than zero.
+</p>
+<p>
+  here was the code i used for the receiving microcontroller:
+</p>
+<pre style="color:rgb(100, 209, 209)">
+    #include <esp_now.h>
+    #include <WiFi.h>
+    #include <AccelStepper.h>
+    
+    const int stepPin = 13;
+    const int dirPin = 12;
+    int forward;
+    
+    AccelStepper stepper (1, stepPin, dirPin);
+    
+    void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
+      memcpy(&forward, incomingData, sizeof(forward));
+      Serial.println(forward);
+    
+    }
+     
+    void setup() {
+      Serial.begin(115200);
+      
+      WiFi.mode(WIFI_STA);
+    
+      if (esp_now_init() != ESP_OK) {
+        Serial.println("Error initializing ESP-NOW");
+        return;
+      }
+    
+      esp_now_register_recv_cb(OnDataRecv);
+    }
+     
+    void loop() {
+     
+       stepper.setMaxSpeed(500);     
+       stepper.setSpeed(500);  
+       
+       if(forward > 0){
+          stepper.runSpeed();
+       }
+    }
+</pre>
+</div>
+<div>
+  <pre style="color:gray">
+# final result
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+      <img src="images/net3.gif">
+</p>
+
+
+</div>
+</body>
+
+<link rel="stylesheet" href="style.css">
+
+</html>
