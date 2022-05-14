@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com"> 
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+
+</head>
+
+<body bgcolor=#000000>
+  
+  <div>
+    <pre>
+/final project: the cam car
+    </pre>  
+  </div>
+  <div>
+    <pre style="color:gray">
+# inspiration
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+my original plans for a final project were to make some sort of knock-activated door-opening mechanism. given, however,
+that i had pretty much built out the entire design already in <a href="week4.html">week four</a>, I decided to use 
+the final project as an opportunity to try something else</p>
+<p>
+to that end, i decided to build a car that could be piloted remotely and that had a camera. my original inspiration came from
+the automated delivery drones that Amazon is rolling out in some cities</p>
+<img src="images/fp1.jpeg">
+<p>
+  i thought it would be interesting to build a car that connected to a wifi network and, as such, that i could pilot from anywhere
+  that there is wifi. especially at harvard, where essentially the entire campus is connected by a shared wifi network, this
+  could have the potential for serious range — i.e. i could drive it to the science center from my dorm room in Dunster House.
+</p>
+  </div>
+  <div>
+    <pre style="color:gray">
+# building the car
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+  <img src="images/fp2.png">
+    <p>
+the design design of the car was meant to be very simple, with just enough room on the body to fit the stepper motor and the power source. i began with the block of wood, which i 
+drilled holes in slightly bigger than the diameter of the eventual axle. i then secured the axle and wheels with screws reinforced by hot glue. 
+    </p>
+<p>i then secured the stepper motor to the base with a wooden mount, using a shim to make sure the fit was snug. i then glued the breadboard to the front of the 
+  car so that the cam would have a good view. 
+</p>
+<p>
+  because the portable battery power source was so round, i created a little diagonal mount for it on the back of the car for easy access/so that it would't fall off. 
+</p>
+  </div>
+<div>
+  <pre style="color:gray">
+# soldering a circuitboard
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+i had originally intended to solder a protoboard instead of using a breadboard to minimize the amount of dangling wires/possibility for
+something to disconnect
+</p>
+<p>
+i began by designing a circuitboard visually. because i come from a graphic design background, i used figma to make my design
+</p>
+
+<p>
+ because the biggest protoboard available was 24x10 pins, my goal in designing the circuit was to make it actually fit on the board without
+ having any overlapping circuits, as well as to minimize the amount of soldering i would have to do. here was my final design:
+</p>
+<p>
+  <img src="/images/fp3.png">
+</p>
+<p>
+  when i when to actually solder everything together, however, i realized that my soldering skills weren't up to the task, and i accidentally
+  soldered together two circuits that weren't supposed to be connected. because there wasn't another large enough protoboard available, and because
+  i didn't have enough time to go through the process again, i decided to abandon the soldered PBC board in favor of the breadboard.
+</p>
+<p>
+  here was as far as i got:
+</p>
+<p>
+  <img src="/images/fp4.jpg">
+</p>
+
+</div>
+<div>
+  <pre style="color:gray">
+# programming the microcontroller
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+      in <a href="week11.html">week eleven</a>, i used ESP-NOW to allow one microcontroller to command the motor attached to another one. this method of
+      data transfer had a bit of a lag, and because i would be sending large packets of data (in the form of video) for this project,
+      i decided to opt for creating a LAN-based server instead. 
+</p>
+<p>
+  i adapted the code from this <a href="https://randomnerdtutorials.com/esp32-cam-car-robot-web-server/">tutorial</a> for my microcontroller, because mine would be controlling a stepper motor instead. i used the AccelStepper library commands
+to streamline the process of controlling the stepper motor speed. 
+</p>
+<p>
+here was the final version of the code that i used:
+</p>
+<pre style="color:rgb(3, 85, 85)">
+<code class="language-arduino hljs">
+  #include "esp_camera.h"
+#include <WiFi.h>
+#include "esp_timer.h"
+#include "img_converters.h"
+#include "Arduino.h"
+#include "fb_gfx.h"
+#include "soc/soc.h"             // disable brownout problems
+#include "soc/rtc_cntl_reg.h"    // disable brownout problems
+#include "esp_http_server.h"
+ 
+  #include <AccelStepper.h>
+
+  const int stepPin = 12;
+  const int dirPin = 13;
+  
+  AccelStepper stepper (1, stepPin, dirPin);
+
+
+
+// Replace with your network credentials
+const char* ssid = "MAKERSPACE";
+const char* password = "12345678";
+
+#define PART_BOUNDARY "123456789000000000000987654321"
+
+#define CAMERA_MODEL_AI_THINKER
+//#define CAMERA_MODEL_M5STACK_PSRAM
+//#define CAMERA_MODEL_M5STACK_WITHOUT_PSRAM
+//#define CAMERA_MODEL_M5STACK_PSRAM_B
+//#define CAMERA_MODEL_WROVER_KIT
+
+#if defined(CAMERA_MODEL_WROVER_KIT)
+  #define PWDN_GPIO_NUM    -1
+  #define RESET_GPIO_NUM   -1
+  #define XCLK_GPIO_NUM    21
+  #define SIOD_GPIO_NUM    26
+  #define SIOC_GPIO_NUM    27
+  
+  #define Y9_GPIO_NUM      35
+  #define Y8_GPIO_NUM      34
+  #define Y7_GPIO_NUM      39
+  #define Y6_GPIO_NUM      36
+  #define Y5_GPIO_NUM      19
+  #define Y4_GPIO_NUM      18
+  #define Y3_GPIO_NUM       5
+  #define Y2_GPIO_NUM       4
+  #define VSYNC_GPIO_NUM   25
+  #define HREF_GPIO_NUM    23
+  #define PCLK_GPIO_NUM    22
+
+#elif defined(CAMERA_MODEL_M5STACK_PSRAM)
+  #define PWDN_GPIO_NUM     -1
+  #define RESET_GPIO_NUM    15
+  #define XCLK_GPIO_NUM     27
+  #define SIOD_GPIO_NUM     25
+  #define SIOC_GPIO_NUM     23
+  
+  #define Y9_GPIO_NUM       19
+  #define Y8_GPIO_NUM       36
+  #define Y7_GPIO_NUM       18
+  #define Y6_GPIO_NUM       39
+  #define Y5_GPIO_NUM        5
+  #define Y4_GPIO_NUM       34
+  #define Y3_GPIO_NUM       35
+  #define Y2_GPIO_NUM       32
+  #define VSYNC_GPIO_NUM    22
+  #define HREF_GPIO_NUM     26
+  #define PCLK_GPIO_NUM     21
+
+#elif defined(CAMERA_MODEL_M5STACK_WITHOUT_PSRAM)
+  #define PWDN_GPIO_NUM     -1
+  #define RESET_GPIO_NUM    15
+  #define XCLK_GPIO_NUM     27
+  #define SIOD_GPIO_NUM     25
+  #define SIOC_GPIO_NUM     23
+  
+  #define Y9_GPIO_NUM       19
+  #define Y8_GPIO_NUM       36
+  #define Y7_GPIO_NUM       18
+  #define Y6_GPIO_NUM       39
+  #define Y5_GPIO_NUM        5
+  #define Y4_GPIO_NUM       34
+  #define Y3_GPIO_NUM       35
+  #define Y2_GPIO_NUM       17
+  #define VSYNC_GPIO_NUM    22
+  #define HREF_GPIO_NUM     26
+  #define PCLK_GPIO_NUM     21
+
+#elif defined(CAMERA_MODEL_AI_THINKER)
+  #define PWDN_GPIO_NUM     32
+  #define RESET_GPIO_NUM    -1
+  #define XCLK_GPIO_NUM      0
+  #define SIOD_GPIO_NUM     26
+  #define SIOC_GPIO_NUM     27
+  
+  #define Y9_GPIO_NUM       35
+  #define Y8_GPIO_NUM       34
+  #define Y7_GPIO_NUM       39
+  #define Y6_GPIO_NUM       36
+  #define Y5_GPIO_NUM       21
+  #define Y4_GPIO_NUM       19
+  #define Y3_GPIO_NUM       18
+  #define Y2_GPIO_NUM        5
+  #define VSYNC_GPIO_NUM    25
+  #define HREF_GPIO_NUM     23
+  #define PCLK_GPIO_NUM     22
+
+#elif defined(CAMERA_MODEL_M5STACK_PSRAM_B)
+  #define PWDN_GPIO_NUM     -1
+  #define RESET_GPIO_NUM    15
+  #define XCLK_GPIO_NUM     27
+  #define SIOD_GPIO_NUM     22
+  #define SIOC_GPIO_NUM     23
+  
+  #define Y9_GPIO_NUM       19
+  #define Y8_GPIO_NUM       36
+  #define Y7_GPIO_NUM       18
+  #define Y6_GPIO_NUM       39
+  #define Y5_GPIO_NUM        5
+  #define Y4_GPIO_NUM       34
+  #define Y3_GPIO_NUM       35
+  #define Y2_GPIO_NUM       32
+  #define VSYNC_GPIO_NUM    25
+  #define HREF_GPIO_NUM     26
+  #define PCLK_GPIO_NUM     21
+
+#else
+  #error "Camera model not selected"
+#endif
+
+static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
+static const char* _STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
+static const char* _STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
+
+httpd_handle_t camera_httpd = NULL;
+httpd_handle_t stream_httpd = NULL;
+
+static const char PROGMEM INDEX_HTML[] = R"rawliteral(
+[HTML code for website goes here — I couldn't insert it without messing up the code snippet on this page.]
+)rawliteral";
+
+static esp_err_t index_handler(httpd_req_t *req){
+  httpd_resp_set_type(req, "text/html");
+  return httpd_resp_send(req, (const char *)INDEX_HTML, strlen(INDEX_HTML));
+}
+
+static esp_err_t stream_handler(httpd_req_t *req){
+  camera_fb_t * fb = NULL;
+  esp_err_t res = ESP_OK;
+  size_t _jpg_buf_len = 0;
+  uint8_t * _jpg_buf = NULL;
+  char * part_buf[64];
+
+  res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
+  if(res != ESP_OK){
+    return res;
+  }
+
+  while(true){
+    fb = esp_camera_fb_get();
+    if (!fb) {
+      Serial.println("Camera capture failed");
+      res = ESP_FAIL;
+    } else {
+      if(fb->width > 400){
+        if(fb->format != PIXFORMAT_JPEG){
+          bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
+          esp_camera_fb_return(fb);
+          fb = NULL;
+          if(!jpeg_converted){
+            Serial.println("JPEG compression failed");
+            res = ESP_FAIL;
+          }
+        } else {
+          _jpg_buf_len = fb->len;
+          _jpg_buf = fb->buf;
+        }
+      }
+    }
+    if(res == ESP_OK){
+      size_t hlen = snprintf((char *)part_buf, 64, _STREAM_PART, _jpg_buf_len);
+      res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
+    }
+    if(res == ESP_OK){
+      res = httpd_resp_send_chunk(req, (const char *)_jpg_buf, _jpg_buf_len);
+    }
+    if(res == ESP_OK){
+      res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
+    }
+    if(fb){
+      esp_camera_fb_return(fb);
+      fb = NULL;
+      _jpg_buf = NULL;
+    } else if(_jpg_buf){
+      free(_jpg_buf);
+      _jpg_buf = NULL;
+    }
+    if(res != ESP_OK){
+      break;
+    }
+    //Serial.printf("MJPG: %uB\n",(uint32_t)(_jpg_buf_len));
+  }
+  return res;
+}
+
+static esp_err_t cmd_handler(httpd_req_t *req){
+  char*  buf;
+  size_t buf_len;
+  char variable[32] = {0,};
+  
+  buf_len = httpd_req_get_url_query_len(req) + 1;
+  if (buf_len > 1) {
+    buf = (char*)malloc(buf_len);
+    if(!buf){
+      httpd_resp_send_500(req);
+      return ESP_FAIL;
+    }
+    if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
+      if (httpd_query_key_value(buf, "go", variable, sizeof(variable)) == ESP_OK) {
+      } else {
+        free(buf);
+        httpd_resp_send_404(req);
+        return ESP_FAIL;
+      }
+    } else {
+      free(buf);
+      httpd_resp_send_404(req);
+      return ESP_FAIL;
+    }
+    free(buf);
+  } else {
+    httpd_resp_send_404(req);
+    return ESP_FAIL;
+  }
+
+  sensor_t * s = esp_camera_sensor_get();
+  int res = 0;
+  
+  if(!strcmp(variable, "forward")) {
+    Serial.println("Forward");
+   stepper.setMaxSpeed(500);     
+   stepper.setSpeed(500);  
+  }
+  else if(!strcmp(variable, "left")) {
+    Serial.println("Left");
+   
+  }
+  else if(!strcmp(variable, "right")) {
+    Serial.println("Right");
+
+  }
+  else if(!strcmp(variable, "backward")) {
+    Serial.println("Backward");
+   stepper.setMaxSpeed(-500);     
+   stepper.setSpeed(-500);  
+  }
+  else if(!strcmp(variable, "stop")) {
+    Serial.println("Stop");
+   stepper.setSpeed(0);  
+    
+  }
+  else {
+    res = -1;
+  }
+
+  if(res){
+    return httpd_resp_send_500(req);
+  }
+
+  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+  return httpd_resp_send(req, NULL, 0);
+}
+
+void startCameraServer(){
+  httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+  config.server_port = 80;
+  httpd_uri_t index_uri = {
+    .uri       = "/",
+    .method    = HTTP_GET,
+    .handler   = index_handler,
+    .user_ctx  = NULL
+  };
+
+  httpd_uri_t cmd_uri = {
+    .uri       = "/action",
+    .method    = HTTP_GET,
+    .handler   = cmd_handler,
+    .user_ctx  = NULL
+  };
+  httpd_uri_t stream_uri = {
+    .uri       = "/stream",
+    .method    = HTTP_GET,
+    .handler   = stream_handler,
+    .user_ctx  = NULL
+  };
+  if (httpd_start(&camera_httpd, &config) == ESP_OK) {
+    httpd_register_uri_handler(camera_httpd, &index_uri);
+    httpd_register_uri_handler(camera_httpd, &cmd_uri);
+  }
+  config.server_port += 1;
+  config.ctrl_port += 1;
+  if (httpd_start(&stream_httpd, &config) == ESP_OK) {
+    httpd_register_uri_handler(stream_httpd, &stream_uri);
+  }
+}
+
+void setup() {
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
+  
+  Serial.begin(115200);
+  Serial.setDebugOutput(false);
+  
+  camera_config_t config;
+  config.ledc_channel = LEDC_CHANNEL_0;
+  config.ledc_timer = LEDC_TIMER_0;
+  config.pin_d0 = Y2_GPIO_NUM;
+  config.pin_d1 = Y3_GPIO_NUM;
+  config.pin_d2 = Y4_GPIO_NUM;
+  config.pin_d3 = Y5_GPIO_NUM;
+  config.pin_d4 = Y6_GPIO_NUM;
+  config.pin_d5 = Y7_GPIO_NUM;
+  config.pin_d6 = Y8_GPIO_NUM;
+  config.pin_d7 = Y9_GPIO_NUM;
+  config.pin_xclk = XCLK_GPIO_NUM;
+  config.pin_pclk = PCLK_GPIO_NUM;
+  config.pin_vsync = VSYNC_GPIO_NUM;
+  config.pin_href = HREF_GPIO_NUM;
+  config.pin_sscb_sda = SIOD_GPIO_NUM;
+  config.pin_sscb_scl = SIOC_GPIO_NUM;
+  config.pin_pwdn = PWDN_GPIO_NUM;
+  config.pin_reset = RESET_GPIO_NUM;
+  config.xclk_freq_hz = 20000000;
+  config.pixel_format = PIXFORMAT_JPEG; 
+  
+  if(psramFound()){
+    config.frame_size = FRAMESIZE_VGA;
+    config.jpeg_quality = 10;
+    config.fb_count = 2;
+  } else {
+    config.frame_size = FRAMESIZE_SVGA;
+    config.jpeg_quality = 12;
+    config.fb_count = 1;
+  }
+  
+  // Camera init
+  esp_err_t err = esp_camera_init(&config);
+  if (err != ESP_OK) {
+    Serial.printf("Camera init failed with error 0x%x", err);
+    return;
+  }
+  // Wi-Fi connection
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected");
+  
+  Serial.print("Camera Stream Ready! Go to: http://");
+  Serial.println(WiFi.localIP());
+  
+  // Start streaming web server
+  startCameraServer();
+}
+
+void loop() {
+  stepper.runSpeed();
+}
+</code>
+</pre>
+<p>
+  i had originally planned to make the code more complex (e.g. add left/right turning, make the car accelerate faster the longer the "forward" button was pressed, etc.), but here is 
+  where i ran into my biggest problem: uploading code to the ESP32-CAM microcontroller.
+</p>
+<p>
+  for approximately eight hours, i was unable to upload any code to the ESP32-CAM. the biggest problem was my computer being unable to detect
+  the microcontroller that was plugged in. i tried a variety of different fixes: swapping out the dongles, wires, ESP32-CAM, and FTDI programmers — none of which worked.
+  i then assumed there was some sort of issue with my computer, but it also wouldn't work on anyone else's computer either.
+</p>
+<img src="images/fp69.png">
+<p>
+  the culprit ended up being the FTDI programmer.
+  </p>
+  <img src="/images/fp5.jpg">
+  <p>
+  after a while of usage, it would get very hot very quickly, and then stop working. the reason that i didn't discover that 
+  was the case earlier was because many of the replacement FTDI programmers i used seemed to already be broken. it's unclear why this happens (my working hypothesis
+  is that the motor driver (if the potentiometer is turned too high) demands too much amperage, which overheats the FTDI programmer).
+</p>
+<p>
+  after the code was finally uploaded, this is what the server looked like:
+</p>
+<img src="images/fp6.png">
+</div>
+<div>
+  <pre style="color:gray">
+# final product and reflections
+    </pre>
+    <pre style="color:gray">
+# ---------------------------------
+  </pre>
+    <p>
+      here is a video of the final product in action:
+</p>
+<iframe width="500" height="315"
+src="https://www.youtube.com/embed/ujanRAPrj8w">
+</iframe>
+<p>
+  it is able to move forward and backward, the video quality is fairly high, and the range is also quite high. i only tested it using the
+  router in the makerspace, but i could theoretically connect it to the harvard university wifi by registering the MAC address, which would increase
+  the range to essentially all of campus.
+</p>
+<p>
+  there were many features i wish i had implemented, but was unable to in part because of the delays caused by being unable to upload code to the cam, but also in part
+  because of my own failure to allocate my time effectively and begin working on the project earlier.
+</p>
+<p>
+  the first additional feature would, of course, be adding a second stepper motor to control another wheel independently, thus allowing it to turn left/right. my original design
+  would've used two front wheels (each controlled by a separate stepper motor), and one single freely rotating back wheel.
+</p>
+<p>
+  if i had a lot more time, i think it would be interesting to integrate some object-tracking into the video, and have the car, for example, maintain
+  a certain distance behind a moving object it would be tracking. this, i think, would increase the functionality far beyond its current form.
+</p>
+<p>
+  there are, of course, also cosmetic/hardware changes i would've liked to make if i had more time: soldering the circuitboard, creating a less exposed chassis,
+  securing the tires more cleanly, etc. 
+</p>
+<p>
+  perhaps the biggest lesson from this is the realization that there will inevitably be unforeseen delays in the process of creating a final project, and that it's impossible to 
+  realize an ideal vision without starting early and allocating time effectively. 
+</p>
+<p>
+  and on a final note, i would like to thank nathan, ibrahim, all of the TFs, and — most of all — all of my peers in the class for making this
+  such a wonderful semester. i took this class, in large part, to fulfill a divisional distribution requirement, but i came out of it with not only a basic
+  working knowledge of so many practical skills, but a new openness to making — to crafting and building and creating my own fixes to problems
+  i encounter on a daily basis. so thank you so much for this wonderful gift. 
+</p>
+</div>
+</body>
+
+<link rel="stylesheet" href="style.css">
+
+</html>
